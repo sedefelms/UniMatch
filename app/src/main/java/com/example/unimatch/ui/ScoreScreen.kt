@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -50,10 +47,18 @@ fun ScoreScreen(
                     onClick = {
                         selectedScoreType = type
                         expanded = false
-                        viewModel.filterScores(type)
                     }
                 )
             }
+        }
+
+        Button(
+            onClick = { viewModel.filterScores(selectedScoreType) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Text("List Programs")
         }
 
         LazyColumn {

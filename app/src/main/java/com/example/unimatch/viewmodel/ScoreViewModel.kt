@@ -56,7 +56,6 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
             val row = sheet.getRow(rowIndex) ?: continue
 
             try {
-                println("Score Type read: ${row.getCell(5)?.stringCellValue}")
                 scores.add(
                     ScoreData(
                         programKodu = row.getCell(0)?.stringCellValue ?: "",
