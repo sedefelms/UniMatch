@@ -21,10 +21,13 @@ fun ScoreScreen(
     viewModel: ScoreViewModel = viewModel()
 ) {
     var selectedScoreType by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
+    var selectedUnivType by remember { mutableStateOf("") }
+    var scoreTypeExpanded by remember { mutableStateOf(false) }
+    var univTypeExpanded by remember { mutableStateOf(false) }
     var expectedScore by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     val scoreTypes by viewModel.scoreTypes.collectAsState()
+    val univTypes by viewModel.univTypes.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
 
     LaunchedEffect(scoreTypes) {
@@ -51,12 +54,12 @@ fun ScoreScreen(
                 modifier = Modifier
                     .padding(bottom = 8.dp)
                     .fillMaxWidth()
-                    .clickable { expanded = true }
+                    .clickable { scoreTypeExpanded = true }
             )
 
             DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
+                expanded = scoreTypeExpanded,
+                onDismissRequest = { scoreTypeExpanded = false },
                 modifier = Modifier.fillMaxWidth(0.9f)
             ) {
                 scoreTypes.forEach { type ->
@@ -64,7 +67,41 @@ fun ScoreScreen(
                         text = { Text(type) },
                         onClick = {
                             selectedScoreType = type
-                            expanded = false
+                            scoreTypeExpanded = false
+                        }
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = selectedUnivType,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("University Type (Optional)") },
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .fillMaxWidth()
+                    .clickable { univTypeExpanded = true }
+            )
+
+            DropdownMenu(
+                expanded = univTypeExpanded,
+                onDismissRequest = { univTypeExpanded = false },
+                modifier = Modifier.fillMaxWidth(0.9f)
+            ) {
+                DropdownMenuItem(
+                    text = { Text("All") },
+                    onClick = {
+                        selectedUnivType = ""
+                        univTypeExpanded = false
+                    }
+                )
+                univTypes.forEach { type ->
+                    DropdownMenuItem(
+                        text = { Text(type) },
+                        onClick = {
+                            selectedUnivType = type
+                            univTypeExpanded = false
                         }
                     )
                 }
@@ -83,7 +120,7 @@ fun ScoreScreen(
             Button(
                 onClick = {
                     val score = expectedScore.toDoubleOrNull() ?: 0.0
-                    viewModel.filterScores(selectedScoreType, score)
+                    viewModel.filterScores(selectedScoreType, selectedUnivType, score)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
