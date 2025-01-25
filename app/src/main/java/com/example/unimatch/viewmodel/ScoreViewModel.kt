@@ -92,6 +92,13 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
         return _scoreTypes.value
     }
 
+    fun getUniversityNamesByType(univType: String): List<String> {
+        return _scores.value
+            .filter { it.universityType == univType }
+            .map { it.universityName }
+            .distinct()
+    }
+
     fun filterScores(scoreType: String, univType: String, univName: String, expectedScore: Double = 0.0) {
         viewModelScope.launch {
             val originalScores = _scores.value

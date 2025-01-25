@@ -35,8 +35,20 @@ fun ScoreScreen(
     val univNames by viewModel.univNames.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
 
+    var filteredUnivNames by remember {
+        mutableStateOf<List<String>>(emptyList())
+    }
+
     LaunchedEffect(scoreTypes) {
         isLoading = scoreTypes.isEmpty()
+    }
+
+    LaunchedEffect(selectedUnivType, univNames) {
+        filteredUnivNames = if (selectedUnivType.isEmpty()) {
+            univNames
+        } else {
+            viewModel.getUniversityNamesByType(selectedUnivType)
+        }
     }
 
     Column(modifier = modifier.padding(16.dp)) {
@@ -98,6 +110,7 @@ fun ScoreScreen(
                     text = { Text("All") },
                     onClick = {
                         selectedUnivType = ""
+                        selectedUnivName = ""
                         univTypeExpanded = false
                     }
                 )
@@ -106,6 +119,7 @@ fun ScoreScreen(
                         text = { Text(type) },
                         onClick = {
                             selectedUnivType = type
+                            selectedUnivName = ""
                             univTypeExpanded = false
                         }
                     )
@@ -135,7 +149,7 @@ fun ScoreScreen(
                         univNameExpanded = false
                     }
                 )
-                univNames.forEach { name ->
+                filteredUnivNames.forEach { name ->
                     DropdownMenuItem(
                         text = { Text(name) },
                         onClick = {
