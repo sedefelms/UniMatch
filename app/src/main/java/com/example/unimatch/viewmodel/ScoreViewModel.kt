@@ -99,13 +99,23 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
             .distinct()
     }
 
-    fun filterScores(scoreType: String, univType: String, univName: String, expectedScore: Double = 0.0) {
+    fun getProgramNamesByFilters(scoreType: String, univType: String = "", univName: String = ""): List<String> {
+        return _scores.value
+            .filter { it.scoreType == scoreType }
+            .filter { univType.isEmpty() || it.universityType == univType }
+            .filter { univName.isEmpty() || it.universityName == univName }
+            .map { it.programName }
+            .distinct()
+    }
+
+    fun filterScores(scoreType: String, univType: String, univName: String, programName: String, expectedScore: Double = 0.0) {
         viewModelScope.launch {
             val originalScores = _scores.value
             _filteredScores.value = originalScores
                 .filter { it.scoreType == scoreType }
                 .filter { univType.isEmpty() || it.universityType == univType }
                 .filter { univName.isEmpty() || it.universityName == univName }
+                .filter { programName.isEmpty() || it.programName == programName }
                 .filter { it.minScore <= expectedScore }
                 .sortedByDescending { it.minScore }
         }

@@ -23,21 +23,23 @@ fun ScoreScreen(
     var selectedScoreType by remember { mutableStateOf("") }
     var selectedUnivType by remember { mutableStateOf("") }
     var selectedUnivName by remember { mutableStateOf("") }
+    var selectedProgramName by remember { mutableStateOf("") }
     var scoreTypeExpanded by remember { mutableStateOf(false) }
     var univTypeExpanded by remember { mutableStateOf(false) }
     var univNameExpanded by remember { mutableStateOf(false) }
+    var programNameExpanded by remember { mutableStateOf(false) }
     var expectedScore by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var selectedScore by remember { mutableStateOf<ScoreData?>(null) }
     var hasFilteredOnce by remember { mutableStateOf(false) }
+
     val scoreTypes by viewModel.scoreTypes.collectAsState()
     val univTypes by viewModel.univTypes.collectAsState()
     val univNames by viewModel.univNames.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
 
-    var filteredUnivNames by remember {
-        mutableStateOf<List<String>>(emptyList())
-    }
+    var filteredUnivNames by remember { mutableStateOf<List<String>>(emptyList()) }
+    var filteredProgramNames by remember { mutableStateOf<List<String>>(emptyList()) }
 
     LaunchedEffect(scoreTypes) {
         isLoading = scoreTypes.isEmpty()
@@ -48,6 +50,17 @@ fun ScoreScreen(
             univNames
         } else {
             viewModel.getUniversityNamesByType(selectedUnivType)
+        }
+    }
+
+    LaunchedEffect(selectedScoreType, selectedUnivType, selectedUnivName) {
+        if (selectedScoreType.isNotEmpty()) {
+            filteredProgramNames = viewModel.getProgramNamesByFilters(
+                selectedScoreType,
+                selectedUnivType,
+                selectedUnivName
+            )
+            selectedProgramName = ""
         }
     }
 
@@ -84,6 +97,7 @@ fun ScoreScreen(
                         text = { Text(type) },
                         onClick = {
                             selectedScoreType = type
+                            selectedProgramName = ""
                             scoreTypeExpanded = false
                         }
                     )
@@ -111,6 +125,7 @@ fun ScoreScreen(
                     onClick = {
                         selectedUnivType = ""
                         selectedUnivName = ""
+                        selectedProgramName = ""
                         univTypeExpanded = false
                     }
                 )
@@ -120,6 +135,7 @@ fun ScoreScreen(
                         onClick = {
                             selectedUnivType = type
                             selectedUnivName = ""
+                            selectedProgramName = ""
                             univTypeExpanded = false
                         }
                     )
@@ -146,6 +162,7 @@ fun ScoreScreen(
                     text = { Text("All") },
                     onClick = {
                         selectedUnivName = ""
+                        selectedProgramName = ""
                         univNameExpanded = false
                     }
                 )
@@ -154,7 +171,39 @@ fun ScoreScreen(
                         text = { Text(name) },
                         onClick = {
                             selectedUnivName = name
+                            selectedProgramName = ""
                             univNameExpanded = false
+                        }
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = selectedProgramName,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Program Name") },
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .fillMaxWidth()
+                    .clickable {
+                        if (selectedScoreType.isNotEmpty()) {
+                            programNameExpanded = true
+                        }
+                    }
+            )
+
+            DropdownMenu(
+                expanded = programNameExpanded,
+                onDismissRequest = { programNameExpanded = false },
+                modifier = Modifier.fillMaxWidth(0.9f)
+            ) {
+                filteredProgramNames.forEach { name ->
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = {
+                            selectedProgramName = name
+                            programNameExpanded = false
                         }
                     )
                 }
@@ -173,12 +222,13 @@ fun ScoreScreen(
             Button(
                 onClick = {
                     val score = expectedScore.toDoubleOrNull() ?: 0.0
-                    viewModel.filterScores(selectedScoreType, selectedUnivType, selectedUnivName, score)
+                    viewModel.filterScores(selectedScoreType, selectedUnivType, selectedUnivName, selectedProgramName, score)
                     hasFilteredOnce = true
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = 8.dp),
+                enabled = selectedScoreType.isNotEmpty() && selectedProgramName.isNotEmpty()
             ) {
                 Text("List Programs")
             }
@@ -215,7 +265,7 @@ fun ScoreScreen(
 }
 
 @Composable
-fun ScoreItem(
+private fun ScoreItem(
     score: ScoreData,
     onClick: () -> Unit
 ) {
@@ -234,7 +284,7 @@ fun ScoreItem(
 }
 
 @Composable
-fun ScoreDetailsDialog(
+private fun ScoreDetailsDialog(
     score: ScoreData,
     onDismiss: () -> Unit
 ) {
