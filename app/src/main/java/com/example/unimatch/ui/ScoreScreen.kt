@@ -22,14 +22,17 @@ fun ScoreScreen(
 ) {
     var selectedScoreType by remember { mutableStateOf("") }
     var selectedUnivType by remember { mutableStateOf("") }
+    var selectedUnivName by remember { mutableStateOf("") }
     var scoreTypeExpanded by remember { mutableStateOf(false) }
     var univTypeExpanded by remember { mutableStateOf(false) }
+    var univNameExpanded by remember { mutableStateOf(false) }
     var expectedScore by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var selectedScore by remember { mutableStateOf<ScoreData?>(null) }
     var hasFilteredOnce by remember { mutableStateOf(false) }
     val scoreTypes by viewModel.scoreTypes.collectAsState()
     val univTypes by viewModel.univTypes.collectAsState()
+    val univNames by viewModel.univNames.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
 
     LaunchedEffect(scoreTypes) {
@@ -110,6 +113,40 @@ fun ScoreScreen(
             }
 
             OutlinedTextField(
+                value = selectedUnivName,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("University Name (Optional)") },
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .fillMaxWidth()
+                    .clickable { univNameExpanded = true }
+            )
+
+            DropdownMenu(
+                expanded = univNameExpanded,
+                onDismissRequest = { univNameExpanded = false },
+                modifier = Modifier.fillMaxWidth(0.9f)
+            ) {
+                DropdownMenuItem(
+                    text = { Text("All") },
+                    onClick = {
+                        selectedUnivName = ""
+                        univNameExpanded = false
+                    }
+                )
+                univNames.forEach { name ->
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = {
+                            selectedUnivName = name
+                            univNameExpanded = false
+                        }
+                    )
+                }
+            }
+
+            OutlinedTextField(
                 value = expectedScore,
                 onValueChange = { expectedScore = it },
                 label = { Text("Expected Score") },
@@ -122,7 +159,7 @@ fun ScoreScreen(
             Button(
                 onClick = {
                     val score = expectedScore.toDoubleOrNull() ?: 0.0
-                    viewModel.filterScores(selectedScoreType, selectedUnivType, score)
+                    viewModel.filterScores(selectedScoreType, selectedUnivType, selectedUnivName, score)
                     hasFilteredOnce = true
                 },
                 modifier = Modifier

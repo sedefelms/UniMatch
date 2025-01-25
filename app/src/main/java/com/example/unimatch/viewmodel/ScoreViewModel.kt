@@ -21,6 +21,9 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
     private val _univTypes = MutableStateFlow<List<String>>(emptyList())
     val univTypes = _univTypes.asStateFlow()
 
+    private val _univNames = MutableStateFlow<List<String>>(emptyList())
+    val univNames = _univNames.asStateFlow()
+
     private val _filteredScores = MutableStateFlow<List<ScoreData>>(emptyList())
     val filteredScores = _filteredScores.asStateFlow()
 
@@ -44,6 +47,7 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
             _scores.value = allScores
             _scoreTypes.value = allScores.map { it.scoreType }.distinct()
             _univTypes.value = allScores.map { it.universityType }.distinct()
+            _univNames.value = allScores.map { it.universityName }.distinct()
             _filteredScores.value = emptyList()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -88,12 +92,13 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
         return _scoreTypes.value
     }
 
-    fun filterScores(scoreType: String, univType: String, expectedScore: Double = 0.0) {
+    fun filterScores(scoreType: String, univType: String, univName: String, expectedScore: Double = 0.0) {
         viewModelScope.launch {
             val originalScores = _scores.value
             _filteredScores.value = originalScores
                 .filter { it.scoreType == scoreType }
                 .filter { univType.isEmpty() || it.universityType == univType }
+                .filter { univName.isEmpty() || it.universityName == univName }
                 .filter { it.minScore <= expectedScore }
                 .sortedByDescending { it.minScore }
         }
