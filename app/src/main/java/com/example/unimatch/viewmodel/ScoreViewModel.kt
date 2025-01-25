@@ -40,7 +40,7 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
 
             _scores.value = allScores
             _scoreTypes.value = allScores.map { it.scoreType }.distinct()
-            _filteredScores.value = emptyList() // Initialize with empty list
+            _filteredScores.value = emptyList()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -84,11 +84,11 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
         return _scoreTypes.value
     }
 
-    fun filterScores(scoreType: String, minScore: Double = 0.0, maxScore: Double = Double.MAX_VALUE) {
+    fun filterScores(scoreType: String, expectedScore: Double = 0.0) {
         viewModelScope.launch {
             val originalScores = _scores.value
             _filteredScores.value = originalScores
-                .filter { it.scoreType == scoreType && it.minScore <= minScore }
+                .filter { it.scoreType == scoreType && it.minScore <= expectedScore }
                 .sortedByDescending { it.minScore }
         }
     }

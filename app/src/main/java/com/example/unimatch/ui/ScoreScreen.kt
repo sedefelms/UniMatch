@@ -22,8 +22,7 @@ fun ScoreScreen(
 ) {
     var selectedScoreType by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
-    var minScore by remember { mutableStateOf("") }
-    var maxScore by remember { mutableStateOf("") }
+    var expectedScore by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     val scoreTypes by viewModel.scoreTypes.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
@@ -72,19 +71,9 @@ fun ScoreScreen(
             }
 
             OutlinedTextField(
-                value = minScore,
-                onValueChange = { minScore = it },
-                label = { Text("Minimum Score") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            )
-
-            OutlinedTextField(
-                value = maxScore,
-                onValueChange = { maxScore = it },
-                label = { Text("Maximum Score") },
+                value = expectedScore,
+                onValueChange = { expectedScore = it },
+                label = { Text("Expected Score") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -93,9 +82,8 @@ fun ScoreScreen(
 
             Button(
                 onClick = {
-                    val min = minScore.toDoubleOrNull() ?: 0.0
-                    val max = maxScore.toDoubleOrNull() ?: Double.MAX_VALUE
-                    viewModel.filterScores(selectedScoreType, min, max)
+                    val score = expectedScore.toDoubleOrNull() ?: 0.0
+                    viewModel.filterScores(selectedScoreType, score)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
