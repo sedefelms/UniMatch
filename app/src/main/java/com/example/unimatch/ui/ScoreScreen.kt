@@ -1,14 +1,21 @@
 package com.example.unimatch.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -32,11 +39,16 @@ fun ScoreScreen(
     var isLoading by remember { mutableStateOf(true) }
     var selectedScore by remember { mutableStateOf<ScoreData?>(null) }
     var hasFilteredOnce by remember { mutableStateOf(false) }
+    var filtersExpanded by remember { mutableStateOf(true) }
 
     val scoreTypes by viewModel.scoreTypes.collectAsState()
     val univTypes by viewModel.univTypes.collectAsState()
     val univNames by viewModel.univNames.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
+
+    val rotationState by animateFloatAsState(
+        targetValue = if (filtersExpanded) 180f else 0f
+    )
 
     var filteredUnivNames by remember { mutableStateOf<List<String>>(emptyList()) }
     var filteredProgramNames by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -76,162 +88,195 @@ fun ScoreScreen(
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         } else {
-            OutlinedTextField(
-                value = selectedScoreType,
-                onValueChange = { },
-                readOnly = true,
-                label = { Text("Score Type") },
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .fillMaxWidth()
-                    .clickable { scoreTypeExpanded = true }
-            )
-
-            DropdownMenu(
-                expanded = scoreTypeExpanded,
-                onDismissRequest = { scoreTypeExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.9f)
+            Card(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                scoreTypes.forEach { type ->
-                    DropdownMenuItem(
-                        text = { Text(type) },
-                        onClick = {
-                            selectedScoreType = type
-                            selectedProgramName = ""
-                            scoreTypeExpanded = false
-                        }
-                    )
-                }
-            }
-
-            OutlinedTextField(
-                value = selectedUnivType,
-                onValueChange = { },
-                readOnly = true,
-                label = { Text("University Type (Optional)") },
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .fillMaxWidth()
-                    .clickable { univTypeExpanded = true }
-            )
-
-            DropdownMenu(
-                expanded = univTypeExpanded,
-                onDismissRequest = { univTypeExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.9f)
-            ) {
-                DropdownMenuItem(
-                    text = { Text("All") },
-                    onClick = {
-                        selectedUnivType = ""
-                        selectedUnivName = ""
-                        selectedProgramName = ""
-                        univTypeExpanded = false
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { filtersExpanded = !filtersExpanded }
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Filters", style = MaterialTheme.typography.titleMedium)
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (filtersExpanded) "Collapse" else "Expand",
+                            modifier = Modifier.rotate(rotationState)
+                        )
                     }
-                )
-                univTypes.forEach { type ->
-                    DropdownMenuItem(
-                        text = { Text(type) },
-                        onClick = {
-                            selectedUnivType = type
-                            selectedUnivName = ""
-                            selectedProgramName = ""
-                            univTypeExpanded = false
+
+                    AnimatedVisibility(
+                        visible = filtersExpanded,
+                        enter = expandVertically(),
+                        exit = shrinkVertically()
+                    ) {
+                        Column {
+                            OutlinedTextField(
+                                value = selectedScoreType,
+                                onValueChange = { },
+                                readOnly = true,
+                                label = { Text("Score Type") },
+                                modifier = Modifier
+                                    .padding(bottom = 8.dp)
+                                    .fillMaxWidth()
+                                    .clickable { scoreTypeExpanded = true }
+                            )
+
+                            DropdownMenu(
+                                expanded = scoreTypeExpanded,
+                                onDismissRequest = { scoreTypeExpanded = false },
+                                modifier = Modifier.fillMaxWidth(0.9f)
+                            ) {
+                                scoreTypes.forEach { type ->
+                                    DropdownMenuItem(
+                                        text = { Text(type) },
+                                        onClick = {
+                                            selectedScoreType = type
+                                            selectedProgramName = ""
+                                            scoreTypeExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+
+                            OutlinedTextField(
+                                value = selectedUnivType,
+                                onValueChange = { },
+                                readOnly = true,
+                                label = { Text("University Type (Optional)") },
+                                modifier = Modifier
+                                    .padding(bottom = 8.dp)
+                                    .fillMaxWidth()
+                                    .clickable { univTypeExpanded = true }
+                            )
+
+                            DropdownMenu(
+                                expanded = univTypeExpanded,
+                                onDismissRequest = { univTypeExpanded = false },
+                                modifier = Modifier.fillMaxWidth(0.9f)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("All") },
+                                    onClick = {
+                                        selectedUnivType = ""
+                                        selectedUnivName = ""
+                                        selectedProgramName = ""
+                                        univTypeExpanded = false
+                                    }
+                                )
+                                univTypes.forEach { type ->
+                                    DropdownMenuItem(
+                                        text = { Text(type) },
+                                        onClick = {
+                                            selectedUnivType = type
+                                            selectedUnivName = ""
+                                            selectedProgramName = ""
+                                            univTypeExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+
+                            OutlinedTextField(
+                                value = selectedUnivName,
+                                onValueChange = { },
+                                readOnly = true,
+                                label = { Text("University Name (Optional)") },
+                                modifier = Modifier
+                                    .padding(bottom = 8.dp)
+                                    .fillMaxWidth()
+                                    .clickable { univNameExpanded = true }
+                            )
+
+                            DropdownMenu(
+                                expanded = univNameExpanded,
+                                onDismissRequest = { univNameExpanded = false },
+                                modifier = Modifier.fillMaxWidth(0.9f)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("All") },
+                                    onClick = {
+                                        selectedUnivName = ""
+                                        selectedProgramName = ""
+                                        univNameExpanded = false
+                                    }
+                                )
+                                filteredUnivNames.forEach { name ->
+                                    DropdownMenuItem(
+                                        text = { Text(name) },
+                                        onClick = {
+                                            selectedUnivName = name
+                                            selectedProgramName = ""
+                                            univNameExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+
+                            OutlinedTextField(
+                                value = selectedProgramName,
+                                onValueChange = { },
+                                readOnly = true,
+                                label = { Text("Program Name") },
+                                modifier = Modifier
+                                    .padding(bottom = 8.dp)
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (selectedScoreType.isNotEmpty()) {
+                                            programNameExpanded = true
+                                        }
+                                    }
+                            )
+
+                            DropdownMenu(
+                                expanded = programNameExpanded,
+                                onDismissRequest = { programNameExpanded = false },
+                                modifier = Modifier.fillMaxWidth(0.9f)
+                            ) {
+                                filteredProgramNames.forEach { name ->
+                                    DropdownMenuItem(
+                                        text = { Text(name) },
+                                        onClick = {
+                                            selectedProgramName = name
+                                            programNameExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+
+                            OutlinedTextField(
+                                value = expectedScore,
+                                onValueChange = { expectedScore = it },
+                                label = { Text("Expected Score") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            )
+
+                            Button(
+                                onClick = {
+                                    val score = expectedScore.toDoubleOrNull() ?: 0.0
+                                    viewModel.filterScores(selectedScoreType, selectedUnivType, selectedUnivName, selectedProgramName, score)
+                                    hasFilteredOnce = true
+                                    filtersExpanded = false
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                enabled = selectedScoreType.isNotEmpty() && selectedProgramName.isNotEmpty()
+                            ) {
+                                Text("List Programs")
+                            }
                         }
-                    )
-                }
-            }
-
-            OutlinedTextField(
-                value = selectedUnivName,
-                onValueChange = { },
-                readOnly = true,
-                label = { Text("University Name (Optional)") },
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .fillMaxWidth()
-                    .clickable { univNameExpanded = true }
-            )
-
-            DropdownMenu(
-                expanded = univNameExpanded,
-                onDismissRequest = { univNameExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.9f)
-            ) {
-                DropdownMenuItem(
-                    text = { Text("All") },
-                    onClick = {
-                        selectedUnivName = ""
-                        selectedProgramName = ""
-                        univNameExpanded = false
                     }
-                )
-                filteredUnivNames.forEach { name ->
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        onClick = {
-                            selectedUnivName = name
-                            selectedProgramName = ""
-                            univNameExpanded = false
-                        }
-                    )
                 }
             }
 
-            OutlinedTextField(
-                value = selectedProgramName,
-                onValueChange = { },
-                readOnly = true,
-                label = { Text("Program Name") },
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .fillMaxWidth()
-                    .clickable {
-                        if (selectedScoreType.isNotEmpty()) {
-                            programNameExpanded = true
-                        }
-                    }
-            )
-
-            DropdownMenu(
-                expanded = programNameExpanded,
-                onDismissRequest = { programNameExpanded = false },
-                modifier = Modifier.fillMaxWidth(0.9f)
-            ) {
-                filteredProgramNames.forEach { name ->
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        onClick = {
-                            selectedProgramName = name
-                            programNameExpanded = false
-                        }
-                    )
-                }
-            }
-
-            OutlinedTextField(
-                value = expectedScore,
-                onValueChange = { expectedScore = it },
-                label = { Text("Expected Score") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            )
-
-            Button(
-                onClick = {
-                    val score = expectedScore.toDoubleOrNull() ?: 0.0
-                    viewModel.filterScores(selectedScoreType, selectedUnivType, selectedUnivName, selectedProgramName, score)
-                    hasFilteredOnce = true
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                enabled = selectedScoreType.isNotEmpty() && selectedProgramName.isNotEmpty()
-            ) {
-                Text("List Programs")
-            }
+            Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn {
                 if (hasFilteredOnce && filteredScores.isEmpty()) {
