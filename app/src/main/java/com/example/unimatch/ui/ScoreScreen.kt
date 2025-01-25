@@ -26,6 +26,7 @@ fun ScoreScreen(
     var univTypeExpanded by remember { mutableStateOf(false) }
     var expectedScore by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
+    var selectedScore by remember { mutableStateOf<ScoreData?>(null) }
     val scoreTypes by viewModel.scoreTypes.collectAsState()
     val univTypes by viewModel.univTypes.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
@@ -131,20 +132,67 @@ fun ScoreScreen(
 
             LazyColumn {
                 items(filteredScores) { score ->
-                    ScoreItem(score)
+                    ScoreItem(
+                        score = score,
+                        onClick = { selectedScore = score }
+                    )
                 }
             }
+        }
+    }
+
+    if (selectedScore != null) {
+        ScoreDetailsDialog(
+            score = selectedScore!!,
+            onDismiss = { selectedScore = null }
+        )
+    }
+}
+
+@Composable
+fun ScoreItem(
+    score: ScoreData,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(4.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Text(text = score.programName)
+            Text(text = score.universityName)
+            Text(text = "Min Score: ${score.minScore}")
         }
     }
 }
 
 @Composable
-fun ScoreItem(score: ScoreData) {
-    Column(modifier = Modifier.padding(8.dp)) {
-        Text(text = "Program: ${score.programName}")
-        Text(text = "University: ${score.universityName}")
-        Text(text = "Faculty: ${score.facultyName}")
-        Text(text = "Min Score: ${score.minScore}")
-        Text(text = "Max Score: ${score.maxScore}")
-    }
+fun ScoreDetailsDialog(
+    score: ScoreData,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(score.programName) },
+        text = {
+            Column {
+                Text("Program Code: ${score.programKodu}")
+                Text("University Type: ${score.universityType}")
+                Text("University: ${score.universityName}")
+                Text("Faculty: ${score.facultyName}")
+                Text("Score Type: ${score.scoreType}")
+                Text("Quota: ${score.quota}")
+                Text("Placed: ${score.placed}")
+                Text("Min Score: ${score.minScore}")
+                Text("Max Score: ${score.maxScore}")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 }
