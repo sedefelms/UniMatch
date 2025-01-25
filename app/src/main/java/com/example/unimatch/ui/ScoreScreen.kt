@@ -27,6 +27,7 @@ fun ScoreScreen(
     var expectedScore by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var selectedScore by remember { mutableStateOf<ScoreData?>(null) }
+    var hasFilteredOnce by remember { mutableStateOf(false) }
     val scoreTypes by viewModel.scoreTypes.collectAsState()
     val univTypes by viewModel.univTypes.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
@@ -122,6 +123,7 @@ fun ScoreScreen(
                 onClick = {
                     val score = expectedScore.toDoubleOrNull() ?: 0.0
                     viewModel.filterScores(selectedScoreType, selectedUnivType, score)
+                    hasFilteredOnce = true
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -131,11 +133,23 @@ fun ScoreScreen(
             }
 
             LazyColumn {
-                items(filteredScores) { score ->
-                    ScoreItem(
-                        score = score,
-                        onClick = { selectedScore = score }
-                    )
+                if (hasFilteredOnce && filteredScores.isEmpty()) {
+                    item {
+                        Text(
+                            text = "No programs match your criteria",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                } else {
+                    items(filteredScores) { score ->
+                        ScoreItem(
+                            score = score,
+                            onClick = { selectedScore = score }
+                        )
+                    }
                 }
             }
         }
