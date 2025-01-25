@@ -44,7 +44,6 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
     }
 
     private fun readExcelFile(inputStream: InputStream): List<ScoreData> {
@@ -85,10 +84,12 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
         return _scoreTypes.value
     }
 
-    fun filterScores(scoreType: String) {
+    fun filterScores(scoreType: String, minScore: Double = 0.0, maxScore: Double = Double.MAX_VALUE) {
         viewModelScope.launch {
             val originalScores = _scores.value
-            _filteredScores.value = originalScores.filter { it.scoreType == scoreType }
+            _filteredScores.value = originalScores
+                .filter { it.scoreType == scoreType && it.minScore <= minScore }
+                .sortedByDescending { it.minScore }
         }
     }
 }
