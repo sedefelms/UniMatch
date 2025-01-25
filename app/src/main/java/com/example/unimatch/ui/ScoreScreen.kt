@@ -1,14 +1,13 @@
 package com.example.unimatch.ui
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -25,73 +24,90 @@ fun ScoreScreen(
     var expanded by remember { mutableStateOf(false) }
     var minScore by remember { mutableStateOf("") }
     var maxScore by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(true) }
     val scoreTypes by viewModel.scoreTypes.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
 
+    LaunchedEffect(scoreTypes) {
+        isLoading = scoreTypes.isEmpty()
+    }
+
     Column(modifier = modifier.padding(16.dp)) {
-        OutlinedTextField(
-            value = selectedScoreType,
-            onValueChange = { },
-            readOnly = true,
-            label = { Text("Score Type") },
-            modifier = Modifier
-                .padding(bottom = 8.dp)
-                .fillMaxWidth()
-                .clickable { expanded = true }
-        )
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
+            Text(
+                "Loading score types...",
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        } else {
+            OutlinedTextField(
+                value = selectedScoreType,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Score Type") },
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .fillMaxWidth()
+                    .clickable { expanded = true }
+            )
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth(0.9f)
-        ) {
-            scoreTypes.forEach { type ->
-                DropdownMenuItem(
-                    text = { Text(type) },
-                    onClick = {
-                        selectedScoreType = type
-                        expanded = false
-                    }
-                )
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.fillMaxWidth(0.9f)
+            ) {
+                scoreTypes.forEach { type ->
+                    DropdownMenuItem(
+                        text = { Text(type) },
+                        onClick = {
+                            selectedScoreType = type
+                            expanded = false
+                        }
+                    )
+                }
             }
-        }
 
-        OutlinedTextField(
-            value = minScore,
-            onValueChange = { minScore = it },
-            label = { Text("Minimum Score") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-        )
+            OutlinedTextField(
+                value = minScore,
+                onValueChange = { minScore = it },
+                label = { Text("Minimum Score") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            )
 
-        OutlinedTextField(
-            value = maxScore,
-            onValueChange = { maxScore = it },
-            label = { Text("Maximum Score") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp)
-        )
+            OutlinedTextField(
+                value = maxScore,
+                onValueChange = { maxScore = it },
+                label = { Text("Maximum Score") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            )
 
-        Button(
-            onClick = {
-                val min = minScore.toDoubleOrNull() ?: 0.0
-                val max = maxScore.toDoubleOrNull() ?: Double.MAX_VALUE
-                viewModel.filterScores(selectedScoreType, min, max)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
-        ) {
-            Text("List Programs")
-        }
+            Button(
+                onClick = {
+                    val min = minScore.toDoubleOrNull() ?: 0.0
+                    val max = maxScore.toDoubleOrNull() ?: Double.MAX_VALUE
+                    viewModel.filterScores(selectedScoreType, min, max)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Text("List Programs")
+            }
 
-        LazyColumn {
-            items(filteredScores) { score ->
-                ScoreItem(score)
+            LazyColumn {
+                items(filteredScores) { score ->
+                    ScoreItem(score)
+                }
             }
         }
     }

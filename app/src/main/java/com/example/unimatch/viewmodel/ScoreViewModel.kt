@@ -40,7 +40,7 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
 
             _scores.value = allScores
             _scoreTypes.value = allScores.map { it.scoreType }.distinct()
-            _filteredScores.value = allScores
+            _filteredScores.value = emptyList() // Initialize with empty list
         } catch (e: Exception) {
             e.printStackTrace()
         }
