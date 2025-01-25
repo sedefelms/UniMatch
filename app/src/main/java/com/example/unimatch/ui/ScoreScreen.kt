@@ -76,17 +76,14 @@ fun ScoreScreen(
         }
     }
 
-    Column(modifier = modifier.padding(16.dp)) {
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center) {
         if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .align(Alignment.CenterHorizontally)
-            )
-            Text(
-                "Loading score types...",
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+            CircularProgressIndicator()
+            Text("Loading...")
         } else {
             Card(
                 modifier = Modifier.fillMaxWidth()
