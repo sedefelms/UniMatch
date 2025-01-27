@@ -46,7 +46,7 @@ fun UnimatchApp() {
     val onboardingViewModel: OnboardingViewModel = viewModel()
 
     val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
-    val hasCompletedOnboarding by onboardingViewModel.hasCompletedOnboarding.collectAsState()
+    val isNewUser by authViewModel.isNewUser.collectAsState()
     val currentRoute by navController.currentBackStackEntryAsState()
 
     val items = listOf(
@@ -54,12 +54,18 @@ fun UnimatchApp() {
         NavigationItem("favorites", "Favorites", Icons.Default.Favorite)
     )
 
-    LaunchedEffect(isAuthenticated) {
-        if (!isAuthenticated && currentRoute?.destination?.route != "onboarding") {
-            // Clear view model states
-            scoreViewModel.clearUserData()
-            navController.navigate("auth") {
-                popUpTo(0) { inclusive = true }
+    LaunchedEffect(isAuthenticated, isNewUser) {
+        when {
+            !isAuthenticated -> {
+                scoreViewModel.clearUserData()
+                navController.navigate("auth") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+            isNewUser -> {
+                navController.navigate("onboarding") {
+                    popUpTo(0) { inclusive = true }
+                }
             }
         }
     }
@@ -119,18 +125,15 @@ fun UnimatchApp() {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = when {
-                !hasCompletedOnboarding -> "onboarding"
-                !isAuthenticated -> "auth"
-                else -> "search"
-            },
+            startDestination = "auth",
             modifier = Modifier.padding(paddingValues)
         ) {
             composable("onboarding") {
                 OnboardingScreen(
                     onFinished = {
                         onboardingViewModel.completeOnboarding()
-                        navController.navigate(if (isAuthenticated) "search" else "auth") {
+                        authViewModel.clearNewUserFlag()
+                        navController.navigate("search") {
                             popUpTo("onboarding") { inclusive = true }
                         }
                     }
@@ -141,8 +144,14 @@ fun UnimatchApp() {
                 AuthScreen(
                     viewModel = authViewModel,
                     onAuthSuccess = {
-                        navController.navigate("search") {
-                            popUpTo("auth") { inclusive = true }
+                        if (isNewUser) {
+                            navController.navigate("onboarding") {
+                                popUpTo("auth") { inclusive = true }
+                            }
+                        } else {
+                            navController.navigate("search") {
+                                popUpTo("auth") { inclusive = true }
+                            }
                         }
                     }
                 )
