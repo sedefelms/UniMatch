@@ -74,7 +74,12 @@ fun ScoreScreen(
     val univTypes by viewModel.univTypes.collectAsState()
     val univNames by viewModel.univNames.collectAsState()
     val filteredScores by viewModel.filteredScores.collectAsState()
-
+    val maxScore = remember(selectedScoreType) {
+        when (selectedScoreType) {
+            "TYT" -> 500.0
+            else -> 560.0
+        }
+    }
     val rotationState by animateFloatAsState(
         targetValue = if (filtersExpanded) 180f else 0f
     )
@@ -257,9 +262,22 @@ fun ScoreScreen(
 
                             OutlinedTextField(
                                 value = expectedScore,
-                                onValueChange = { expectedScore = it },
-                                label = { Text("Expected Score") },
+                                onValueChange = { newValue ->
+                                    // Only update if empty or valid number within range
+                                    if (newValue.isEmpty()) {
+                                        expectedScore = newValue
+                                    } else {
+                                        newValue.toDoubleOrNull()?.let { score ->
+                                            if (score in 0.0..maxScore) {
+                                                expectedScore = newValue
+                                            }
+                                        }
+                                    }
+                                },
+                                label = { Text("Expected Score (Optional)") },
+                                placeholder = { Text("Max ${maxScore.toInt()}") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                supportingText = { Text("Leave empty or enter score (0-${maxScore.toInt()})") },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp)
@@ -267,7 +285,11 @@ fun ScoreScreen(
 
                             Button(
                                 onClick = {
-                                    val score = expectedScore.toDoubleOrNull() ?: 0.0
+                                    val score = if (expectedScore.isEmpty()) {
+                                        maxScore
+                                    } else {
+                                        expectedScore.toDoubleOrNull() ?: maxScore
+                                    }
                                     viewModel.filterScores(selectedScoreType, selectedUnivType, selectedUnivName, selectedProgramName, score)
                                     hasFilteredOnce = true
                                     filtersExpanded = false
