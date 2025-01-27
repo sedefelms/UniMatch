@@ -1,0 +1,21 @@
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background circle -->
+    <circle cx="120" cy="120" r="110" fill="#E3F2FD"/>
+    
+    <!-- Document stack -->
+    <g transform="translate(70,60)">
+        <!-- Back document -->
+        <rect x="0" y="10" width="80" height="100" fill="#90CAF9" rx="5"/>
+        <!-- Middle document -->
+        <rect x="10" y="5" width="80" height="100" fill="#64B5F6" rx="5"/>
+        <!-- Front document -->
+        <rect x="20" y="0" width="80" height="100" fill="#1976D2" rx="5"/>
+        
+        <!-- Heart -->
+        <g transform="translate(45,35) scale(0.8)">
+            <path d="M 25,10 A 20,20 0,0,1 45,30 A 20,20 0,0,1 25,50 A 20,20 0,0,1 5,30 A 20,20 0,0,1 25,10 Z" 
+                  fill="#FF4081" 
+                  transform="rotate(-45,25,30)"/>
+        </g>
+    </g>
+</svg>

@@ -19,9 +19,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.unimatch.ui.AuthScreen
 import com.example.unimatch.ui.FavoritesScreen
+import com.example.unimatch.ui.OnboardingScreen
 import com.example.unimatch.ui.ScoreScreen
 import com.example.unimatch.ui.theme.UnimatchTheme
 import com.example.unimatch.viewmodel.AuthViewModel
+import com.example.unimatch.viewmodel.OnboardingViewModel
 import com.example.unimatch.viewmodel.ScoreViewModel
 
 class MainActivity : ComponentActivity() {
@@ -41,8 +43,10 @@ fun UnimatchApp() {
     val navController = rememberNavController()
     val scoreViewModel: ScoreViewModel = viewModel()
     val authViewModel: AuthViewModel = viewModel()
+    val onboardingViewModel: OnboardingViewModel = viewModel()
 
     val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
+    val hasCompletedOnboarding by onboardingViewModel.hasCompletedOnboarding.collectAsState()
     val currentRoute by navController.currentBackStackEntryAsState()
 
     val items = listOf(
@@ -51,7 +55,9 @@ fun UnimatchApp() {
     )
 
     LaunchedEffect(isAuthenticated) {
-        if (!isAuthenticated) {
+        if (!isAuthenticated && currentRoute?.destination?.route != "onboarding") {
+            // Clear view model states
+            scoreViewModel.clearUserData()
             navController.navigate("auth") {
                 popUpTo(0) { inclusive = true }
             }
@@ -60,7 +66,10 @@ fun UnimatchApp() {
 
     Scaffold(
         topBar = {
-            if (isAuthenticated && currentRoute?.destination?.route != "auth") {
+            if (isAuthenticated &&
+                currentRoute?.destination?.route != "auth" &&
+                currentRoute?.destination?.route != "onboarding"
+            ) {
                 TopAppBar(
                     title = { Text("UniMatch") },
                     actions = {
@@ -80,7 +89,10 @@ fun UnimatchApp() {
             }
         },
         bottomBar = {
-            if (isAuthenticated && currentRoute?.destination?.route != "auth") {
+            if (isAuthenticated &&
+                currentRoute?.destination?.route != "auth" &&
+                currentRoute?.destination?.route != "onboarding"
+            ) {
                 NavigationBar {
                     val currentDestination = currentRoute?.destination?.route
                     items.forEach { item ->
@@ -107,9 +119,24 @@ fun UnimatchApp() {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = if (isAuthenticated) "search" else "auth",
+            startDestination = when {
+                !hasCompletedOnboarding -> "onboarding"
+                !isAuthenticated -> "auth"
+                else -> "search"
+            },
             modifier = Modifier.padding(paddingValues)
         ) {
+            composable("onboarding") {
+                OnboardingScreen(
+                    onFinished = {
+                        onboardingViewModel.completeOnboarding()
+                        navController.navigate(if (isAuthenticated) "search" else "auth") {
+                            popUpTo("onboarding") { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             composable("auth") {
                 AuthScreen(
                     viewModel = authViewModel,

@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unimatch.data.ScoreData
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +19,7 @@ import java.io.InputStream
 class ScoreViewModel(application: Application) : AndroidViewModel(application) {
     private val firestore = Firebase.firestore
     private val auth = Firebase.auth
+    private var favoritesListener: ListenerRegistration? = null
 
     private val _scores = MutableStateFlow<List<ScoreData>>(emptyList())
     val scores = _scores.asStateFlow()
@@ -40,19 +42,35 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch(Dispatchers.IO) {
             loadExcelData()
-            setupFavoritesListener()
+            setupAuthStateListener()
+        }
+    }
+
+    private fun setupAuthStateListener() {
+        auth.addAuthStateListener { firebaseAuth ->
+            if (firebaseAuth.currentUser != null) {
+                setupFavoritesListener()
+            } else {
+                clearUserData()
+            }
         }
     }
 
     private fun setupFavoritesListener() {
+        // Remove any existing listener
+        favoritesListener?.remove()
+
         val userId = auth.currentUser?.uid ?: return
 
-        firestore.collection("users")
+        // Clear existing favorites before setting up new listener
+        _favoritePrograms.value = emptyList()
+
+        favoritesListener = firestore.collection("users")
             .document(userId)
             .collection("favorites")
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    // Handle error
+                    println("Error listening to favorites: ${error.message}")
                     return@addSnapshotListener
                 }
 
@@ -84,8 +102,8 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
             _filteredScores.value = emptyList()
 
         } catch (e: Exception) {
+            println("Error loading Excel data: ${e.message}")
             e.printStackTrace()
-            // Handle error appropriately
         }
     }
 
@@ -113,7 +131,7 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 )
             } catch (e: Exception) {
-                e.printStackTrace()
+                println("Error reading row $rowIndex: ${e.message}")
                 continue
             }
         }
@@ -176,13 +194,19 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
                     .set(
                         mapOf(
                             "programKodu" to score.programKodu,
-                            "timestamp" to System.currentTimeMillis()
+                            "timestamp" to System.currentTimeMillis(),
+                            "universityName" to score.universityName,
+                            "programName" to score.programName,
+                            "minScore" to score.minScore,
+                            "scoreType" to score.scoreType,
+                            "universityType" to score.universityType,
+                            "facultyName" to score.facultyName
                         )
                     ).await()
 
             } catch (e: Exception) {
+                println("Error adding to favorites: ${e.message}")
                 e.printStackTrace()
-                // Handle error appropriately
             }
         }
     }
@@ -200,13 +224,25 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
                     .await()
 
             } catch (e: Exception) {
+                println("Error removing from favorites: ${e.message}")
                 e.printStackTrace()
-                // Handle error appropriately
             }
         }
     }
 
     fun isFavorite(score: ScoreData): Boolean {
         return _favoritePrograms.value.any { it.programKodu == score.programKodu }
+    }
+
+    fun clearUserData() {
+        _favoritePrograms.value = emptyList()
+        _filteredScores.value = emptyList()
+        favoritesListener?.remove()
+        favoritesListener = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        favoritesListener?.remove()
     }
 }
