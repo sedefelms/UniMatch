@@ -217,7 +217,7 @@ fun ScoreScreen(
                                 value = selectedProgramName,
                                 onValueChange = { },
                                 readOnly = true,
-                                label = { Text("Program Name") },
+                                label = { Text("Program Name (Optional)") },
                                 modifier = Modifier
                                     .padding(bottom = 8.dp)
                                     .fillMaxWidth()
@@ -233,6 +233,13 @@ fun ScoreScreen(
                                 onDismissRequest = { programNameExpanded = false },
                                 modifier = Modifier.fillMaxWidth(0.9f)
                             ) {
+                                DropdownMenuItem(
+                                    text = { Text("All") },
+                                    onClick = {
+                                        selectedProgramName = ""
+                                        programNameExpanded = false
+                                    }
+                                )
                                 filteredProgramNames.forEach { name ->
                                     DropdownMenuItem(
                                         text = { Text(name) },
@@ -264,7 +271,7 @@ fun ScoreScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 8.dp),
-                                enabled = selectedScoreType.isNotEmpty() && selectedProgramName.isNotEmpty()
+                                enabled = selectedScoreType.isNotEmpty() // Remove the selectedProgramName check
                             ) {
                                 Text("List Programs")
                             }
