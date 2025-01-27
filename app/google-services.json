@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "927169599863",
+    "project_id": "unimatch-14fb6",
+    "storage_bucket": "unimatch-14fb6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:927169599863:android:2f27601833363c2adc6972",
+        "android_client_info": {
+          "package_name": "com.example.unimatch"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrrX0Cf5zYEHiv25pEv5tM-hWh47uofoc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

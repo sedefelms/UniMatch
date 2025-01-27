@@ -4,14 +4,21 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unimatch.data.ScoreData
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import java.io.InputStream
 
 class ScoreViewModel(application: Application) : AndroidViewModel(application) {
+    private val firestore = Firebase.firestore
+    private val auth = Firebase.auth
+
     private val _scores = MutableStateFlow<List<ScoreData>>(emptyList())
     val scores = _scores.asStateFlow()
 
@@ -33,7 +40,30 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch(Dispatchers.IO) {
             loadExcelData()
+            setupFavoritesListener()
         }
+    }
+
+    private fun setupFavoritesListener() {
+        val userId = auth.currentUser?.uid ?: return
+
+        firestore.collection("users")
+            .document(userId)
+            .collection("favorites")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    // Handle error
+                    return@addSnapshotListener
+                }
+
+                val favoriteIds = snapshot?.documents?.mapNotNull {
+                    it.getString("programKodu")
+                } ?: emptyList()
+
+                _favoritePrograms.value = _scores.value.filter {
+                    it.programKodu in favoriteIds
+                }
+            }
     }
 
     private suspend fun loadExcelData() {
@@ -48,12 +78,14 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
             readExcelFile(aytInputStream).let { allScores.addAll(it) }
 
             _scores.value = allScores
-            _scoreTypes.value = allScores.map { it.scoreType }.distinct()
-            _univTypes.value = allScores.map { it.universityType }.distinct()
-            _univNames.value = allScores.map { it.universityName }.distinct()
+            _scoreTypes.value = allScores.map { it.scoreType }.distinct().sorted()
+            _univTypes.value = allScores.map { it.universityType }.distinct().sorted()
+            _univNames.value = allScores.map { it.universityName }.distinct().sorted()
             _filteredScores.value = emptyList()
+
         } catch (e: Exception) {
             e.printStackTrace()
+            // Handle error appropriately
         }
     }
 
@@ -91,27 +123,35 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
         return scores
     }
 
-    fun loadScoreTypes(): List<String> {
-        return _scoreTypes.value
-    }
-
     fun getUniversityNamesByType(univType: String): List<String> {
         return _scores.value
             .filter { it.universityType == univType }
             .map { it.universityName }
             .distinct()
+            .sorted()
     }
 
-    fun getProgramNamesByFilters(scoreType: String, univType: String = "", univName: String = ""): List<String> {
+    fun getProgramNamesByFilters(
+        scoreType: String,
+        univType: String = "",
+        univName: String = ""
+    ): List<String> {
         return _scores.value
             .filter { it.scoreType == scoreType }
             .filter { univType.isEmpty() || it.universityType == univType }
             .filter { univName.isEmpty() || it.universityName == univName }
             .map { it.programName }
             .distinct()
+            .sorted()
     }
 
-    fun filterScores(scoreType: String, univType: String, univName: String, programName: String, expectedScore: Double = 0.0) {
+    fun filterScores(
+        scoreType: String,
+        univType: String,
+        univName: String,
+        programName: String,
+        expectedScore: Double = 0.0
+    ) {
         viewModelScope.launch {
             val originalScores = _scores.value
             _filteredScores.value = originalScores
@@ -123,18 +163,47 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
                 .sortedByDescending { it.minScore }
         }
     }
+
     fun addToFavorites(score: ScoreData) {
-        val currentFavorites = _favoritePrograms.value.toMutableList()
-        if (!currentFavorites.any { it.programKodu == score.programKodu }) {
-            currentFavorites.add(score)
-            _favoritePrograms.value = currentFavorites
+        viewModelScope.launch {
+            try {
+                val userId = auth.currentUser?.uid ?: return@launch
+
+                firestore.collection("users")
+                    .document(userId)
+                    .collection("favorites")
+                    .document(score.programKodu)
+                    .set(
+                        mapOf(
+                            "programKodu" to score.programKodu,
+                            "timestamp" to System.currentTimeMillis()
+                        )
+                    ).await()
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Handle error appropriately
+            }
         }
     }
 
     fun removeFromFavorites(score: ScoreData) {
-        val currentFavorites = _favoritePrograms.value.toMutableList()
-        currentFavorites.removeAll { it.programKodu == score.programKodu }
-        _favoritePrograms.value = currentFavorites
+        viewModelScope.launch {
+            try {
+                val userId = auth.currentUser?.uid ?: return@launch
+
+                firestore.collection("users")
+                    .document(userId)
+                    .collection("favorites")
+                    .document(score.programKodu)
+                    .delete()
+                    .await()
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Handle error appropriately
+            }
+        }
     }
 
     fun isFavorite(score: ScoreData): Boolean {

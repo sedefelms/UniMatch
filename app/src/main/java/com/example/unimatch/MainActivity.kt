@@ -7,17 +7,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.unimatch.ui.AuthScreen
 import com.example.unimatch.ui.FavoritesScreen
 import com.example.unimatch.ui.ScoreScreen
 import com.example.unimatch.ui.theme.UnimatchTheme
+import com.example.unimatch.viewmodel.AuthViewModel
 import com.example.unimatch.viewmodel.ScoreViewModel
 
 class MainActivity : ComponentActivity() {
@@ -35,54 +39,98 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun UnimatchApp() {
     val navController = rememberNavController()
-    val viewModel: ScoreViewModel = viewModel()
+    val scoreViewModel: ScoreViewModel = viewModel()
+    val authViewModel: AuthViewModel = viewModel()
+
+    val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
+    val currentRoute by navController.currentBackStackEntryAsState()
 
     val items = listOf(
         NavigationItem("search", "Search", Icons.Default.Search),
         NavigationItem("favorites", "Favorites", Icons.Default.Favorite)
     )
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
+    LaunchedEffect(isAuthenticated) {
+        if (!isAuthenticated) {
+            navController.navigate("auth") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
-                items.forEach { item ->
-                    NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.title) },
-                        label = { Text(item.title) },
-                        selected = currentRoute == item.route,
-                        onClick = {
-                            if (currentRoute != item.route) {
-                                navController.navigate(item.route) {
-                                    // Pop up to the start destination of the graph to
-                                    // avoid building up a large stack of destinations
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
+    Scaffold(
+        topBar = {
+            if (isAuthenticated && currentRoute?.destination?.route != "auth") {
+                TopAppBar(
+                    title = { Text("UniMatch") },
+                    actions = {
+                        IconButton(onClick = {
+                            authViewModel.signOut()
+                            navController.navigate("auth") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Outlined.ExitToApp,
+                                contentDescription = "Log out"
+                            )
+                        }
+                    }
+                )
+            }
+        },
+        bottomBar = {
+            if (isAuthenticated && currentRoute?.destination?.route != "auth") {
+                NavigationBar {
+                    val currentDestination = currentRoute?.destination?.route
+                    items.forEach { item ->
+                        NavigationBarItem(
+                            icon = { Icon(item.icon, contentDescription = item.title) },
+                            label = { Text(item.title) },
+                            selected = currentDestination == item.route,
+                            onClick = {
+                                if (currentDestination != item.route) {
+                                    navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    // Avoid multiple copies of the same destination
-                                    launchSingleTop = true
-                                    // Restore state when reselecting a previously selected item
-                                    restoreState = true
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = "search",
+            startDestination = if (isAuthenticated) "search" else "auth",
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable("search") {
-                ScoreScreen(viewModel = viewModel)
+            composable("auth") {
+                AuthScreen(
+                    viewModel = authViewModel,
+                    onAuthSuccess = {
+                        navController.navigate("search") {
+                            popUpTo("auth") { inclusive = true }
+                        }
+                    }
+                )
             }
+
+            composable("search") {
+                if (isAuthenticated) {
+                    ScoreScreen(viewModel = scoreViewModel)
+                }
+            }
+
             composable("favorites") {
-                FavoritesScreen(viewModel = viewModel)
+                if (isAuthenticated) {
+                    FavoritesScreen(viewModel = scoreViewModel)
+                }
             }
         }
     }
