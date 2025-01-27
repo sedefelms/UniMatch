@@ -27,6 +27,9 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
     private val _filteredScores = MutableStateFlow<List<ScoreData>>(emptyList())
     val filteredScores = _filteredScores.asStateFlow()
 
+    private val _favoritePrograms = MutableStateFlow<List<ScoreData>>(emptyList())
+    val favoritePrograms = _favoritePrograms.asStateFlow()
+
     init {
         viewModelScope.launch(Dispatchers.IO) {
             loadExcelData()
@@ -119,5 +122,22 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
                 .filter { it.minScore <= expectedScore }
                 .sortedByDescending { it.minScore }
         }
+    }
+    fun addToFavorites(score: ScoreData) {
+        val currentFavorites = _favoritePrograms.value.toMutableList()
+        if (!currentFavorites.any { it.programKodu == score.programKodu }) {
+            currentFavorites.add(score)
+            _favoritePrograms.value = currentFavorites
+        }
+    }
+
+    fun removeFromFavorites(score: ScoreData) {
+        val currentFavorites = _favoritePrograms.value.toMutableList()
+        currentFavorites.removeAll { it.programKodu == score.programKodu }
+        _favoritePrograms.value = currentFavorites
+    }
+
+    fun isFavorite(score: ScoreData): Boolean {
+        return _favoritePrograms.value.any { it.programKodu == score.programKodu }
     }
 }

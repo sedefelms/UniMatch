@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unimatch.data.ScoreData
 import com.example.unimatch.viewmodel.ScoreViewModel
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 
 @Composable
 private fun ClickableComboBox(
@@ -323,7 +325,15 @@ fun ScoreScreen(
                     items(filteredScores) { score ->
                         ScoreItem(
                             score = score,
-                            onClick = { selectedScore = score }
+                            onClick = { selectedScore = score },
+                            isFavorite = viewModel.isFavorite(score),
+                            onFavoriteClick = {
+                                if (viewModel.isFavorite(score)) {
+                                    viewModel.removeFromFavorites(score)
+                                } else {
+                                    viewModel.addToFavorites(score)
+                                }
+                            }
                         )
                     }
                 }
@@ -342,18 +352,44 @@ fun ScoreScreen(
 @Composable
 private fun ScoreItem(
     score: ScoreData,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isFavorite: Boolean,
+    onFavoriteClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(4.dp)
-            .clickable(onClick = onClick)
+            //.clickable(onClick = onClick)
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(text = score.programName)
-            Text(text = score.universityName)
-            Text(text = "Min Score: ${score.minScore}")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onClick)
+            ) {
+                Text(text = score.programName)
+                Text(text = score.universityName)
+                Text(text = "Min Score: ${score.minScore}")
+            }
+
+            IconButton(onClick = onFavoriteClick) {
+                Icon(
+                    imageVector = if (isFavorite) {
+                        Icons.Default.Favorite
+                    } else {
+                        Icons.Default.FavoriteBorder
+                    },
+                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                    tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
