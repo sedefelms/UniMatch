@@ -23,6 +23,35 @@ import com.example.unimatch.data.ScoreData
 import com.example.unimatch.viewmodel.ScoreViewModel
 
 @Composable
+private fun ClickableComboBox(
+    value: String,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { },
+            readOnly = true,
+            label = { Text(label) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = false
+        )
+        // Invisible box that covers the entire area and handles clicks
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clickable(onClick = onClick)
+        )
+    }
+}
+
+@Composable
 fun ScoreScreen(
     modifier: Modifier = Modifier,
     viewModel: ScoreViewModel = viewModel()
@@ -111,15 +140,10 @@ fun ScoreScreen(
                         exit = shrinkVertically()
                     ) {
                         Column {
-                            OutlinedTextField(
+                            ClickableComboBox(
                                 value = selectedScoreType,
-                                onValueChange = { },
-                                readOnly = true,
-                                label = { Text("Score Type") },
-                                modifier = Modifier
-                                    .padding(bottom = 8.dp)
-                                    .fillMaxWidth()
-                                    .clickable { scoreTypeExpanded = true }
+                                label = "Score Type",
+                                onClick = { scoreTypeExpanded = true }
                             )
 
                             DropdownMenu(
@@ -138,16 +162,10 @@ fun ScoreScreen(
                                     )
                                 }
                             }
-
-                            OutlinedTextField(
+                            ClickableComboBox(
                                 value = selectedUnivType,
-                                onValueChange = { },
-                                readOnly = true,
-                                label = { Text("University Type (Optional)") },
-                                modifier = Modifier
-                                    .padding(bottom = 8.dp)
-                                    .fillMaxWidth()
-                                    .clickable { univTypeExpanded = true }
+                                label = "University Type (Optional)",
+                                onClick = { univTypeExpanded = true }
                             )
 
                             DropdownMenu(
@@ -176,18 +194,11 @@ fun ScoreScreen(
                                     )
                                 }
                             }
-
-                            OutlinedTextField(
+                            ClickableComboBox(
                                 value = selectedUnivName,
-                                onValueChange = { },
-                                readOnly = true,
-                                label = { Text("University Name (Optional)") },
-                                modifier = Modifier
-                                    .padding(bottom = 8.dp)
-                                    .fillMaxWidth()
-                                    .clickable { univNameExpanded = true }
+                                label = "University Name (Optional)",
+                                onClick = { univNameExpanded = true }
                             )
-
                             DropdownMenu(
                                 expanded = univNameExpanded,
                                 onDismissRequest = { univNameExpanded = false },
@@ -212,22 +223,15 @@ fun ScoreScreen(
                                     )
                                 }
                             }
-
-                            OutlinedTextField(
+                            ClickableComboBox(
                                 value = selectedProgramName,
-                                onValueChange = { },
-                                readOnly = true,
-                                label = { Text("Program Name (Optional)") },
-                                modifier = Modifier
-                                    .padding(bottom = 8.dp)
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        if (selectedScoreType.isNotEmpty()) {
-                                            programNameExpanded = true
-                                        }
+                                label = "Program Name (Optional)",
+                                onClick = {
+                                    if (selectedScoreType.isNotEmpty()) {
+                                        programNameExpanded = true
                                     }
+                                }
                             )
-
                             DropdownMenu(
                                 expanded = programNameExpanded,
                                 onDismissRequest = { programNameExpanded = false },
