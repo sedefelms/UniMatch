@@ -3,6 +3,7 @@ package com.example.unimatch.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.unimatch.data.OnboardingPreferences
 import com.example.unimatch.data.ScoreData
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.ListenerRegistration
@@ -20,6 +21,7 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
     private val firestore = Firebase.firestore
     private val auth = Firebase.auth
     private var favoritesListener: ListenerRegistration? = null
+    private var userPreferences: OnboardingPreferences? = null
 
     private val _scores = MutableStateFlow<List<ScoreData>>(emptyList())
     val scores = _scores.asStateFlow()
@@ -43,6 +45,7 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             loadExcelData()
             setupAuthStateListener()
+            loadUserPreferences()
         }
     }
 
@@ -50,19 +53,44 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
         auth.addAuthStateListener { firebaseAuth ->
             if (firebaseAuth.currentUser != null) {
                 setupFavoritesListener()
+                viewModelScope.launch {
+                    loadUserPreferences()
+                }
             } else {
                 clearUserData()
             }
         }
     }
 
+    private suspend fun loadUserPreferences() {
+        try {
+            auth.currentUser?.uid?.let { userId ->
+                val snapshot = firestore.collection("users")
+                    .document(userId)
+                    .get()
+                    .await()
+
+                snapshot.data?.let { data ->
+                    @Suppress("UNCHECKED_CAST")
+                    val prefsMap = data["onboardingPreferences"] as? Map<String, Any>
+                    prefsMap?.let {
+                        userPreferences = OnboardingPreferences(
+                            selectedSubjects = (it["selectedSubjects"] as? List<String>) ?: emptyList(),
+                            targetScore = (it["targetScore"] as? Double),
+                            cityPreference = it["cityPreference"] as? String
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun setupFavoritesListener() {
-        // Remove any existing listener
         favoritesListener?.remove()
 
         val userId = auth.currentUser?.uid ?: return
-
-        // Clear existing favorites before setting up new listener
         _favoritePrograms.value = emptyList()
 
         favoritesListener = firestore.collection("users")
@@ -171,14 +199,39 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
         expectedScore: Double = 0.0
     ) {
         viewModelScope.launch {
+            if (userPreferences == null) {
+                loadUserPreferences()
+            }
+
             val originalScores = _scores.value
-            _filteredScores.value = originalScores
+            var filteredList = originalScores
                 .filter { it.scoreType == scoreType }
                 .filter { univType.isEmpty() || it.universityType == univType }
                 .filter { univName.isEmpty() || it.universityName == univName }
                 .filter { programName.isEmpty() || it.programName == programName }
                 .filter { it.minScore <= expectedScore }
-                .sortedByDescending { it.minScore }
+
+            // Apply preference-based filtering if available
+            userPreferences?.let { prefs ->
+                if (prefs.selectedSubjects.isNotEmpty()) {
+                    filteredList = filteredList.filter { score ->
+                        prefs.selectedSubjects.any { subject ->
+                            score.programName.contains(subject, ignoreCase = true)
+                        }
+                    }
+                }
+
+                // Apply city preference if available
+                prefs.cityPreference?.let { city ->
+                    if (city.isNotEmpty()) {
+                        filteredList = filteredList.filter { score ->
+                            score.universityName.contains(city, ignoreCase = true)
+                        }
+                    }
+                }
+            }
+
+            _filteredScores.value = filteredList.sortedByDescending { it.minScore }
         }
     }
 
@@ -237,6 +290,7 @@ class ScoreViewModel(application: Application) : AndroidViewModel(application) {
     fun clearUserData() {
         _favoritePrograms.value = emptyList()
         _filteredScores.value = emptyList()
+        userPreferences = null
         favoritesListener?.remove()
         favoritesListener = null
     }

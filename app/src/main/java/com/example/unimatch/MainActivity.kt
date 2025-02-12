@@ -47,6 +47,7 @@ fun UnimatchApp() {
 
     val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
     val isNewUser by authViewModel.isNewUser.collectAsState()
+    val hasCompletedOnboarding by onboardingViewModel.hasCompletedOnboarding.collectAsState()
     val currentRoute by navController.currentBackStackEntryAsState()
 
     val items = listOf(
@@ -54,7 +55,7 @@ fun UnimatchApp() {
         NavigationItem("favorites", "Favorites", Icons.Default.Favorite)
     )
 
-    LaunchedEffect(isAuthenticated, isNewUser) {
+    LaunchedEffect(isAuthenticated, isNewUser, hasCompletedOnboarding) {
         when {
             !isAuthenticated -> {
                 scoreViewModel.clearUserData()
@@ -62,8 +63,13 @@ fun UnimatchApp() {
                     popUpTo(0) { inclusive = true }
                 }
             }
-            isNewUser -> {
+            isNewUser || !hasCompletedOnboarding -> {
                 navController.navigate("onboarding") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+            currentRoute?.destination?.route == "auth" || currentRoute?.destination?.route == "onboarding" -> {
+                navController.navigate("search") {
                     popUpTo(0) { inclusive = true }
                 }
             }
@@ -144,7 +150,7 @@ fun UnimatchApp() {
                 AuthScreen(
                     viewModel = authViewModel,
                     onAuthSuccess = {
-                        if (isNewUser) {
+                        if (isNewUser || !hasCompletedOnboarding) {
                             navController.navigate("onboarding") {
                                 popUpTo("auth") { inclusive = true }
                             }
