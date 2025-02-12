@@ -19,7 +19,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.unimatch.ui.AuthScreen
 import com.example.unimatch.ui.FavoritesScreen
-import com.example.unimatch.ui.OnboardingScreen
+import com.example.unimatch.ui.EnhancedOnboardingScreen
 import com.example.unimatch.ui.ScoreScreen
 import com.example.unimatch.ui.theme.UnimatchTheme
 import com.example.unimatch.viewmodel.AuthViewModel
@@ -135,14 +135,15 @@ fun UnimatchApp() {
             modifier = Modifier.padding(paddingValues)
         ) {
             composable("onboarding") {
-                OnboardingScreen(
+                EnhancedOnboardingScreen(
                     onFinished = {
                         onboardingViewModel.completeOnboarding()
                         authViewModel.clearNewUserFlag()
                         navController.navigate("search") {
                             popUpTo("onboarding") { inclusive = true }
                         }
-                    }
+                    },
+                    viewModel = onboardingViewModel
                 )
             }
 
